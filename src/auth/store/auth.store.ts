@@ -1,80 +1,113 @@
-import { create } from 'zustand';
-import type { User } from '@/interfaces/user.interface';
+import { create } from "zustand";
+import { loginAction, logoutAction } from "../actions/login.action";
+import { checkAuthAction } from "../actions/check-auth.action";
+import { registerAction } from "../actions/register.action";
+import type { ProfileData } from "../interfaces/profile.dto";
+import { updateProfileAction } from "../actions/updateProfile.action";
+import { deleteUserAction } from "../actions/deleteUser.action";
 
-import { loginAction } from '../actions/login.action';
-import { checkAuthAction } from '../actions/check-auth.action';
-
-type AuthStatus = 'authenticated' | 'not-authenticated' | 'checking';
+type AuthStatus = "authenticated" | "not-authenticated" | "checking";
 
 type AuthState = {
-  // Properties
-  user: User | null;
+  user: ProfileData | null;
   token: string | null;
   authStatus: AuthStatus;
 
-  // Getters
+  // Igual que el original — siempre true porque Tomcat no maneja roles
   isAdmin: () => boolean;
 
-  // Actions
   login: (email: string, password: string) => Promise<boolean>;
+  register: (profile: ProfileData, password: string) => Promise<boolean>;
   logout: () => void;
   checkAuthStatus: () => Promise<boolean>;
+  updateProfile: (
+    data: Parameters<typeof updateProfileAction>[0],
+  ) => Promise<boolean>;
+  deleteProfile: () => Promise<boolean>;
 };
 
-export const useAuthStore = create<AuthState>()((set, get) => ({
-  // Implementación del Store
+export const useAuthStore = create<AuthState>()((set /*, get*/) => ({
   user: null,
   token: null,
-  authStatus: 'checking',
+  authStatus: "checking",
 
-  // Getters
-  isAdmin: () => {
-    const roles = get().user?.roles || [];
-    return roles.includes('admin');
-    // return !!get().user?.roles.includes('admin')
-  },
+  // Tomcat no tiene roles; devolvemos true por defecto para no romper
+  // las guards que dependan de isAdmin() en el resto de la app
+  isAdmin: () => true,
 
-  // Actions
-  login: async (email: string, password: string) => {
-    console.log({ email, password });
-
+  // ── LOGIN ──────────────────────────────────────────────────────────────
+  // loginAction hace /login + /consulta_usuario y devuelve { id_usuario, token, user }
+  login: async (email, password) => {
     try {
       const data = await loginAction(email, password);
-      localStorage.setItem('token', data.token);
-
-      set({ user: data.user, token: data.token, authStatus: 'authenticated' });
-
+      // Persistir antes de la segunda llamada para que el interceptor los tenga
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("id_usuario", String(data.id_usuario));
+      localStorage.setItem("email", email); // consulta_usuario lo necesita
+      set({ user: data.user, token: data.token, authStatus: "authenticated" });
       return true;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
-      localStorage.removeItem('token');
-      set({ user: null, token: null, authStatus: 'not-authenticated' });
+    } catch {
+      localStorage.removeItem("token");
+      localStorage.removeItem("id_usuario");
+      localStorage.removeItem("email");
+      set({ user: null, token: null, authStatus: "not-authenticated" });
       return false;
     }
   },
 
-  logout: () => {
-    localStorage.removeItem('token');
-    set({ user: null, token: null, authStatus: 'not-authenticated' });
+  // ── REGISTER ───────────────────────────────────────────────────────────
+  // Solo registra; no inicia sesión. Redirigir al login después.
+  register: async (profile, password) => {
+    console.log(import.meta.env.VITE_API_URL ?? "/Servicio/rest/ws");
+    try {
+      const data = await registerAction(profile, password);
+      console.log(data.mensaje);
+      return true;
+    } catch (err) {
+      console.log(err);
+      return false;
+    }
   },
 
+  // ── LOGOUT ─────────────────────────────────────────────────────────────
+  logout: () => {
+    logoutAction();
+    set({ user: null, token: null, authStatus: "not-authenticated" });
+  },
+
+  // ── CHECK AUTH STATUS ──────────────────────────────────────────────────
   checkAuthStatus: async () => {
     try {
-      const { user, token } = await checkAuthAction();
-      set({
-        user: user,
-        token: token,
-        authStatus: 'authenticated',
-      });
+      const data = await checkAuthAction();
+      set({ user: data.user, token: data.token, authStatus: "authenticated" });
       return true;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
-      set({
-        user: undefined,
-        token: undefined,
-        authStatus: 'not-authenticated',
-      });
+    } catch {
+      localStorage.removeItem("token");
+      localStorage.removeItem("id_usuario");
+      localStorage.removeItem("email");
+      set({ user: null, token: null, authStatus: "not-authenticated" });
+      return false;
+    }
+  },
+  // Llama al action, y si sale bien actualiza user en el store global
+  updateProfile: async (data) => {
+    try {
+      const updatedUser = await updateProfileAction(data);
+      set({ user: updatedUser });
+      return true;
+    } catch {
+      return false;
+    }
+  },
 
+  deleteProfile: async () => {
+    try {
+      const { mensaje } = await deleteUserAction();
+      console.log(mensaje);
+      logoutAction(); // por si acaso — es idempotente
+      set({ user: null, token: null, authStatus: "not-authenticated" });
+      return true;
+    } catch {
       return false;
     }
   },

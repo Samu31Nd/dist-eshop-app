@@ -1,7 +1,13 @@
-import type { User } from '@/interfaces/user.interface';
+import type { ProfileData } from "./profile.dto";
 
-// Login, Register, CheckStatus
+// Lo que regresa loginAction (combinación de /login + /consulta_usuario)
 export interface AuthResponse {
-  user: User;
+  id_usuario: number;
   token: string;
+  user: ProfileData;
+}
+
+// Lo que regresa alta_usuario, alta_articulo, compra_articulo, etc.
+export interface MensajeResponse {
+  mensaje: string;
 }

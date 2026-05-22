@@ -1,68 +1,59 @@
-import { tesloApi } from '@/api/tesloApi';
-import type { Product } from '@/interfaces/product.interface';
-import { sleep } from '@/lib/sleep';
+import { tomcatApi } from "@/api/tomcatApi";
+import type { Articulo } from "@/interfaces/articulo.interface";
+
+// Partial para crear (id_articulo ausente) — Tomcat no tiene endpoint de update de artículo
+type ArticuloInput = Partial<Articulo> & { file?: File };
 
 export const createUpdateProductAction = async (
-  productLike: Partial<Product> & { files?: File[] }
-): Promise<Product> => {
-  await sleep(1500);
+  input: ArticuloInput,
+): Promise<Articulo> => {
+  const { id_articulo, file, foto, ...rest } = input;
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { id, user, images = [], files = [], ...rest } = productLike;
+  const isCreating = !id_articulo || id_articulo === 0;
 
-  const isCreating = id === 'new';
-
-  rest.stock = Number(rest.stock || 0);
-  rest.price = Number(rest.price || 0);
-
-  // Preparar las imágenes
-  if (files.length > 0) {
-    const newImageNames = await uploadFiles(files);
-    images.push(...newImageNames);
+  if (!isCreating) {
+    // Tomcat no expone un endpoint de modificación de artículo en los requerimientos.
+    // Si en el futuro se agrega, aquí iría el PUT correspondiente.
+    throw new Error(
+      "La modificación de artículos no está soportada en este backend",
+    );
   }
 
-  const imagesToSave = images.map((image) => {
-    if (image.includes('http')) return image.split('/').pop() || '';
-    return image;
+  // Convertir el File a base64 para enviarlo en el body JSON
+  // Tomcat recibe foto como byte[] — Jackson lo deserializa desde base64
+  let fotoBase64: string | null = foto ?? null;
+  if (file) {
+    fotoBase64 = await fileToBase64(file);
+  }
+
+  const { data } = await tomcatApi.post<{ mensaje: string }>("/alta_articulo", {
+    nombre: rest.nombre ?? "",
+    descripcion: rest.descripcion ?? "",
+    precio: Number(rest.precio ?? 0),
+    cantidad: Number(rest.cantidad ?? 0),
+    foto: fotoBase64,
   });
 
-  const { data } = await tesloApi<Product>({
-    url: isCreating ? '/products' : `/products/${id}`,
-    method: isCreating ? 'POST' : 'PATCH',
-    data: {
-      ...rest,
-      images: imagesToSave,
-    },
-  });
+  if (data.mensaje !== "OK") throw new Error(data.mensaje);
 
+  // Tomcat no regresa el artículo creado, solo { mensaje: "OK" }.
+  // Devolvemos lo que enviamos para que la UI pueda actualizar el estado local.
   return {
-    ...data,
-    images: data.images.map((image) => {
-      if (image.includes('http')) return image;
-      return `${import.meta.env.VITE_API_URL}/files/product/${image}`;
-    }),
+    id_articulo: 0, // desconocido hasta que se haga una consulta
+    nombre: rest.nombre ?? "",
+    descripcion: rest.descripcion ?? "",
+    precio: Number(rest.precio ?? 0),
+    cantidad: Number(rest.cantidad ?? 0),
+    foto: fotoBase64 ? `data:image/jpeg;base64,${fotoBase64}` : null,
   };
 };
 
-export interface FileUploadResponse {
-  secureUrl: string;
-  fileName: string;
-}
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
-const uploadFiles = async (files: File[]) => {
-  const uploadPromises = files.map(async (file) => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const { data } = await tesloApi<FileUploadResponse>({
-      url: '/files/product',
-      method: 'POST',
-      data: formData,
-    });
-
-    return data.fileName;
+const fileToBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve((reader.result as string).split(",")[1]); // quitar prefijo data:...
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
   });
-
-  const uploadedFileNames = await Promise.all(uploadPromises);
-  return uploadedFileNames;
-};

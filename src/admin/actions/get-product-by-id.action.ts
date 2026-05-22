@@ -1,33 +1,34 @@
-import { tesloApi } from '@/api/tesloApi';
-import type { Product } from '@/interfaces/product.interface';
+import { tomcatApi } from "@/api/tomcatApi";
+import type { Articulo } from "@/interfaces/articulo.interface";
 
-export const getProductByIdAction = async (id: string): Promise<Product> => {
-  if (!id) throw new Error('Id is required');
-
-  if (id === 'new') {
+export const getProductByIdAction = async (
+  id: number | "new",
+): Promise<Articulo> => {
+  // Artículo vacío para el formulario de alta
+  if (id === "new") {
     return {
-      id: 'new',
-      title: '',
-      price: 0,
-      description: '',
-      slug: '',
-      stock: 0,
-      sizes: [],
-      gender: 'men',
-      tags: [],
-      images: [],
-    } as unknown as Product;
+      id_articulo: 0,
+      nombre: "",
+      descripcion: "",
+      precio: 0,
+      cantidad: 0,
+      foto: null,
+    };
   }
 
-  const { data } = await tesloApi.get<Product>(`/products/${id}`);
+  if (!id) throw new Error("Se requiere un id de artículo");
 
-  const images = data.images.map((image) => {
-    if (image.includes('http')) return image;
-    return `${import.meta.env.VITE_API_URL}/files/product/${image}`;
+  // Tomcat no tiene GET /articulo/:id — traemos todos y filtramos por id.
+  // consulta_articulos con palabra vacía regresa todo el catálogo.
+  const { data } = await tomcatApi.get<Articulo[]>("/consulta_articulos", {
+    params: { palabra: "" },
   });
 
+  const articulo = data.find((a) => a.id_articulo === Number(id));
+  if (!articulo) throw new Error(`Artículo con id ${id} no encontrado`);
+
   return {
-    ...data,
-    images,
+    ...articulo,
+    foto: articulo.foto ? `data:image/jpeg;base64,${articulo.foto}` : null,
   };
 };

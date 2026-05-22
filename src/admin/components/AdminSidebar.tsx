@@ -1,13 +1,7 @@
 import { Link, useLocation } from 'react-router';
 import {
   Home,
-  Users,
   BarChart3,
-  Settings,
-  FileText,
-  ShoppingCart,
-  Bell,
-  HelpCircle,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -24,17 +18,12 @@ export const AdminSidebar: React.FC<SidebarProps> = ({
   onToggle,
 }) => {
   const { pathname } = useLocation();
-  const { user } = useAuthStore();
+  const { user: profile } = useAuthStore();
+  const user = profile!
 
   const menuItems = [
     { icon: Home, label: 'Dashboard', to: '/admin' },
     { icon: BarChart3, label: 'Productos', to: '/admin/products' },
-    { icon: Users, label: 'Usuarios' },
-    { icon: ShoppingCart, label: 'Ordenes' },
-    { icon: FileText, label: 'Reportes' },
-    { icon: Bell, label: 'Notificaciones' },
-    { icon: Settings, label: 'Ajustes' },
-    { icon: HelpCircle, label: 'Ayuda' },
   ];
 
   const isActiveRoute = (to: string) => {
@@ -48,9 +37,8 @@ export const AdminSidebar: React.FC<SidebarProps> = ({
 
   return (
     <div
-      className={`bg-white border-r border-gray-200 transition-all duration-300 ease-in-out  ${
-        isCollapsed ? 'w-18' : 'w-64'
-      } flex flex-col`}
+      className={`bg-white border-r border-gray-200 transition-all duration-300 ease-in-out  ${isCollapsed ? 'w-18' : 'w-64'
+        } flex flex-col`}
     >
       {/* Header */}
       <div className="p-4 border-b border-gray-200 flex items-center justify-between h-18">
@@ -72,11 +60,10 @@ export const AdminSidebar: React.FC<SidebarProps> = ({
               <li key={index}>
                 <Link
                   to={item.to || '/admin'}
-                  className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200 group ${
-                    isActiveRoute(item.to || '/xxxx')
-                      ? 'bg-blue-50 text-blue-600 border-r-2 border-blue-600'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
+                  className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200 group ${isActiveRoute(item.to || '/xxxx')
+                    ? 'bg-blue-50 text-blue-600 border-r-2 border-blue-600'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
                 >
                   <Icon size={20} className="flex-shrink-0" />
                   {!isCollapsed && (
@@ -94,11 +81,11 @@ export const AdminSidebar: React.FC<SidebarProps> = ({
         <div className="p-4 border-t border-gray-200">
           <div className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
-              {user?.fullName.substring(0, 2)}
+              {user.nombre.charAt(0) + user.apellido_paterno.charAt(0)}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">
-                {user?.fullName}
+                {user.nombre + " " + user.apellido_paterno}
               </p>
               <p className="text-xs text-gray-500 truncate">{user?.email}</p>
             </div>

@@ -3,14 +3,98 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CustomLogo } from '@/components/custom/CustomLogo';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
+import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import { toast } from 'sonner';
+import { Field, FieldLabel } from '@/components/ui/field';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Combobox, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxList } from '@/components/ui/combobox';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import type { ProfileData } from '@/auth/interfaces/profile.dto';
+import { useAuthStore } from '@/auth/store/auth.store';
+import { Upload, X } from 'lucide-react';
 
 export const RegisterPage = () => {
+  const navigate = useNavigate();
+  const { register } = useAuthStore();
+  const [open, setOpen] = useState(false)
+  const [date, setDate] = useState<Date | undefined>(undefined)
+  const [gender, setGender] = useState<string>("")
+  const [pfpPreview, setPfpPreview] = useState<string | null>(null)
+  const [pfpBase64, setPfpBase64] = useState<string | null>(null); // base64 puro — lo que se envía
+  const [isPosting, setIsPosting] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+
+  const handleRegister = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsPosting(true);
+
+    const formData = new FormData(event.target as HTMLFormElement)
+    const name = formData.get('name') as string;
+    const paternalSurname = formData.get('paternalSurname') as string;
+    const maternalSurname = formData.get('maternalSurname') as string;
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+
+    console.log('valores:');
+    const profileData: ProfileData = {
+      nombre: name,
+      apellido_paterno: paternalSurname,
+      apellido_materno: maternalSurname,
+      email: email,
+      fecha_nacimiento: date?.toISOString() ?? '01',
+      genero: gender === 'Masculino' ? 'M' : gender === 'Femenino' ? 'F' : undefined,
+      telefono: formData.get('phone') ? Number(formData.get('phone')) : undefined,
+      foto: pfpBase64 ?? undefined,
+    }
+
+    console.log(profileData, { password });
+
+    const isValid = await register(profileData, password);
+
+    if (isValid) {
+      toast.message('Ahora inicia sesion');
+      navigate('/auth/login');
+      return;
+    }
+
+    toast.error('Nombre, correo o/y contraseña no validos');
+    setIsPosting(false);
+  }
+
+  function handleRemovePfp() {
+    if (pfpPreview) URL.revokeObjectURL(pfpPreview);
+    setPfpPreview(null);
+    setPfpBase64(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Preview — URL temporal solo para el <img>
+    if (pfpPreview) URL.revokeObjectURL(pfpPreview);
+    setPfpPreview(URL.createObjectURL(file));
+
+    // Convertir a base64 puro para enviar a Tomcat
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Quitar prefijo "data:image/jpeg;base64," — Jackson solo acepta base64 puro
+      setPfpBase64(result.split(',')[1]);
+    };
+    reader.readAsDataURL(file);
+  };
+
+
   return (
     <div className={'flex flex-col gap-6'}>
       <Card className="overflow-hidden p-0  ">
         <CardContent className="grid p-0 md:grid-cols-2">
-          <form className="p-6 md:p-8">
+          <form onSubmit={handleRegister} className="p-6 md:p-8">
             <div className="flex flex-col gap-6">
               <div className="flex flex-col items-center text-center">
                 <CustomLogo />
@@ -19,21 +103,161 @@ export const RegisterPage = () => {
                   Crea una nueva cuenta
                 </p>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="fullName">Nombre completo</Label>
-                <Input
-                  id="fullName"
-                  type="text"
-                  placeholder="Nombre completo"
-                  required
-                />
+              {/* NOMBRE */}
+              <div className='gap-2 flex flex-col'>
+                <div className="flex items-end gap-3 w-full">
+                  {/* El div del nombre ahora ocupa todo el ancho disponible gracias a flex-1 */}
+                  <div className="grid gap-2 flex-1">
+                    <Label htmlFor="name">Nombre</Label>
+                    <Input
+                      id="name"
+                      name="name"
+                      type="text"
+                      placeholder="Nombre completo"
+                      required
+                    />
+                  </div>
+
+                  {/* Si hay foto, se renderiza al lado derecho compartiendo la línea base del input */}
+                  {pfpPreview && (
+                    <Avatar className="h-10 w-10 shrink-0 border p-1 rounded-full">
+                      <AvatarImage
+                        src={pfpPreview}
+                        alt="Profile picture"
+                        className="h-full w-full rounded-full object-cover"
+                      />
+                      <AvatarFallback>CN</AvatarFallback>
+                    </Avatar>
+                  )}
+                </div>
+
+                <div className='gap-2 flex'>
+                  <div className='gap-2 grid'>
+                    <Label htmlFor="paternalSurname">Apellido paterno</Label>
+                    <Input
+                      id="paternalSurname"
+                      type="text"
+                      name='paternalSurname'
+                      placeholder="Apellido paterno"
+                      required
+                    />
+                  </div>
+                  <div className='gap-2 grid'>
+                    <Label htmlFor="maternalSurname">Apellido materno</Label>
+                    <Input
+                      id="maternalSurname"
+                      type="text"
+                      name='maternalSurname'
+                      placeholder="Apellido materno"
+                    />
+                  </div>
+                </div>
               </div>
+
+              {/* EXTRA DATA */}
+              <div className='flex flex-col gap-2'>
+                <div className='gap-2 flex'>
+                  {/* DATE PICKER */}
+                  <Field className="grid gap-2">
+                    <FieldLabel htmlFor="date">Fecha de Nacimiento</FieldLabel>
+                    <Popover open={open} onOpenChange={setOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          id="date"
+                          className="justify-start font-normal"
+                        >
+                          {date ? date.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' }) : "Selecciona una fecha"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto overflow-hidden p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={date}
+                          defaultMonth={date}
+                          captionLayout="dropdown"
+                          required
+                          onSelect={(date) => {
+                            setDate(date)
+                            setOpen(false)
+                          }}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </Field>
+                  <div className='gap-2 grid'>
+                    <Label>Genero</Label>
+                    <Combobox
+                      value={gender}
+                      onValueChange={(value) => setGender(value ?? "")}
+                    >
+                      <ComboboxInput placeholder="Genero" />
+                      <ComboboxContent>
+                        <ComboboxList>
+                          {genders.map((item) => (
+                            <ComboboxItem key={item} value={item}>
+                              {item}
+                            </ComboboxItem>
+                          ))}
+                        </ComboboxList>
+                      </ComboboxContent>
+                    </Combobox>
+                  </div>
+                </div>
+
+                <div className='grid grid-cols-2 gap-2'>
+                  <div className='gap-2 grid'>
+                    <Label htmlFor="phone">Telefono</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      name='phone'
+                      placeholder="55 12 3456 79"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Foto de perfil</Label>
+                    <div className="flex gap-1.5">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="default"
+                        className="flex-1 gap-1.5 text-xs"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <Upload className="size-3.5" />
+                        {pfpPreview ? "Cambiar" : "Subir"}
+                      </Button>
+                      {pfpPreview && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={handleRemovePfp}
+                          className="shrink-0"
+                        >
+                          <X />
+                        </Button>
+                      )}
+                    </div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleFileChange}
+                    />
+                  </div>
+                </div>
+              </div>
+
 
               <div className="grid gap-2">
                 <Label htmlFor="email">Correo</Label>
                 <Input
                   id="email"
                   type="email"
+                  name='email'
                   placeholder="mail@google.com"
                   required
                 />
@@ -41,57 +265,18 @@ export const RegisterPage = () => {
               <div className="grid gap-2">
                 <div className="flex items-center">
                   <Label htmlFor="password">Contraseña</Label>
-                  <a
-                    href="#"
-                    className="ml-auto text-sm underline-offset-2 hover:underline"
-                  >
-                    ¿Olvidaste tu contraseña?
-                  </a>
                 </div>
                 <Input
                   id="password"
                   type="password"
+                  name='password'
                   required
                   placeholder="Contraseña"
                 />
               </div>
-              <Button type="submit" className="w-full">
+              <Button type="submit" className="w-full" disabled={isPosting}>
                 Crear cuenta
               </Button>
-              <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
-                <span className="relative z-10 bg-background px-2 text-muted-foreground">
-                  O ingresa con
-                </span>
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <Button variant="outline" className="w-full">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                    <path
-                      d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"
-                      fill="currentColor"
-                    />
-                  </svg>
-                  <span className="sr-only">Login with Apple</span>
-                </Button>
-                <Button variant="outline" className="w-full">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                    <path
-                      d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"
-                      fill="currentColor"
-                    />
-                  </svg>
-                  <span className="sr-only">Login with Google</span>
-                </Button>
-                <Button variant="outline" className="w-full">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                    <path
-                      d="M6.915 4.03c-1.968 0-3.683 1.28-4.871 3.113C.704 9.208 0 11.883 0 14.449c0 .706.07 1.369.21 1.973a6.624 6.624 0 0 0 .265.86 5.297 5.297 0 0 0 .371.761c.696 1.159 1.818 1.927 3.593 1.927 1.497 0 2.633-.671 3.965-2.444.76-1.012 1.144-1.626 2.663-4.32l.756-1.339.186-.325c.061.1.121.196.183.3l2.152 3.595c.724 1.21 1.665 2.556 2.47 3.314 1.046.987 1.992 1.22 3.06 1.22 1.075 0 1.876-.355 2.455-.843a3.743 3.743 0 0 0 .81-.973c.542-.939.861-2.127.861-3.745 0-2.72-.681-5.357-2.084-7.45-1.282-1.912-2.957-2.93-4.716-2.93-1.047 0-2.088.467-3.053 1.308-.652.57-1.257 1.29-1.82 2.05-.69-.875-1.335-1.547-1.958-2.056-1.182-.966-2.315-1.303-3.454-1.303zm10.16 2.053c1.147 0 2.188.758 2.992 1.999 1.132 1.748 1.647 4.195 1.647 6.4 0 1.548-.368 2.9-1.839 2.9-.58 0-1.027-.23-1.664-1.004-.496-.601-1.343-1.878-2.832-4.358l-.617-1.028a44.908 44.908 0 0 0-1.255-1.98c.07-.109.141-.224.211-.327 1.12-1.667 2.118-2.602 3.358-2.602zm-10.201.553c1.265 0 2.058.791 2.675 1.446.307.327.737.871 1.234 1.579l-1.02 1.566c-.757 1.163-1.882 3.017-2.837 4.338-1.191 1.649-1.81 1.817-2.486 1.817-.524 0-1.038-.237-1.383-.794-.263-.426-.464-1.13-.464-2.046 0-2.221.63-4.535 1.66-6.088.454-.687.964-1.226 1.533-1.533a2.264 2.264 0 0 1 1.088-.285z"
-                      fill="currentColor"
-                    />
-                  </svg>
-                  <span className="sr-only">Login with Meta</span>
-                </Button>
-              </div>
               <div className="text-center text-sm">
                 ¿Ya tienes cuenta?{' '}
                 <Link to="/auth/login" className="underline underline-offset-4">
@@ -109,11 +294,12 @@ export const RegisterPage = () => {
           </div>
         </CardContent>
       </Card>
-      <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary">
-        Haciendo click, estás de acuerdo con{' '}
-        <a href="#">términos y condiciones</a> y{' '}
-        <a href="#">políticas de uso</a>.
-      </div>
     </div>
   );
 };
+
+
+const genders: string[] = [
+  "Masculino",
+  "Femenino"
+]

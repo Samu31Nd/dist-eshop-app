@@ -1,42 +1,25 @@
-import { tesloApi } from '@/api/tesloApi';
-import type { ProductsResponse } from '@/interfaces/products.response';
+import { tomcatApi } from "@/api/tomcatApi";
+import type { Articulo } from "@/interfaces/articulo.interface";
 
 interface Options {
-  limit?: number | string;
-  offset?: number | string;
-  sizes?: string;
-  gender?: string;
-  minPrice?: number;
-  maxPrice?: number;
-  query?: string;
+  query?: string; // palabra clave — busca en nombre y descripcion con LIKE
 }
 
 export const getProductsAction = async (
-  options: Options
-): Promise<ProductsResponse> => {
-  const { limit, offset, gender, sizes, minPrice, maxPrice, query } = options;
+  options: Options,
+): Promise<Articulo[]> => {
+  const { query = "" } = options;
 
-  const { data } = await tesloApi.get<ProductsResponse>('/products', {
-    params: {
-      limit,
-      offset,
-      gender,
-      sizes,
-      minPrice,
-      maxPrice,
-      q: query,
-    },
+  // consulta_articulos es GET con ?palabra=&id_usuario=&token=
+  // id_usuario y token los inyecta el interceptor de tomcatApi automáticamente
+  const { data } = await tomcatApi.get<Articulo[]>("/consulta_articulos", {
+    params: { palabra: query },
   });
 
-  const productsWithImageUrls = data.products.map((product) => ({
-    ...product,
-    images: product.images.map(
-      (image) => `${import.meta.env.VITE_API_URL}/files/product/${image}`
-    ),
+  // La foto viene como base64 desde Tomcat (Jackson serializa byte[] así).
+  // Agregamos el prefijo data URI para poder usarla directo en un <img src=...>
+  return data.map((articulo) => ({
+    ...articulo,
+    foto: articulo.foto ? `data:image/jpeg;base64,${articulo.foto}` : null,
   }));
-
-  return {
-    ...data,
-    products: productsWithImageUrls,
-  };
 };

@@ -15,11 +15,15 @@ import { AdminProductsPage } from './admin/pages/products/AdminProductsPage';
 
 import {
   AdminRoute,
+  AuthenticatedRoute,
   NotAuthenticatedRoute,
 } from './components/routes/ProtectedRoutes';
+import { ProfilePage } from './profile/pages/Profile/ProfilePage';
+import { ProfileEditPage } from './profile/pages/EditProfile/ProfileEditPage';
 
 const AuthLayout = lazy(() => import('./auth/layouts/AuthLayout'));
 const AdminLayout = lazy(() => import('./admin/layouts/AdminLayout'));
+const ProfileLayout = lazy(() => import('./profile/layouts/ProfileLayout'));
 
 export const appRouter = createHashRouter([
   // export const appRouter = createBrowserRouter([
@@ -88,6 +92,24 @@ export const appRouter = createHashRouter([
         element: <AdminProductPage />,
       },
     ],
+  },
+  {
+    path: '/profile',
+    element: (
+      <AuthenticatedRoute>
+        <ProfileLayout />
+      </AuthenticatedRoute>
+    ),
+    children: [
+      {
+        index: true,
+        element: <ProfilePage />
+      },
+      {
+        path: '/profile/edit',
+        element: <ProfileEditPage />
+      }
+    ]
   },
   {
     path: '*',

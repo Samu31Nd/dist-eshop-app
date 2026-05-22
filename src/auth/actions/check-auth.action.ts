@@ -1,19 +1,28 @@
-import { tesloApi } from '@/api/tesloApi';
-import type { AuthResponse } from '../interfaces/auth.response';
+import { tomcatApi } from "@/api/tomcatApi";
+import type { AuthResponse } from "../interfaces/auth.response";
+import type { ProfileData } from "../interfaces/profile.dto";
 
 export const checkAuthAction = async (): Promise<AuthResponse> => {
-  const token = localStorage.getItem('token');
-  if (!token) throw new Error('No token found');
+  const token = localStorage.getItem("token");
+  const id_usuario = localStorage.getItem("id_usuario");
+  const email = localStorage.getItem("email");
 
-  try {
-    const { data } = await tesloApi.get<AuthResponse>('/auth/check-status');
+  if (!token || !id_usuario || !email)
+    throw new Error("No hay sesión guardada");
 
-    localStorage.setItem('token', data.token);
+  // Validar contra la BD y recuperar perfil actualizado en una sola llamada
+  const { data: perfil } = await tomcatApi.get<ProfileData>(
+    "/consulta_usuario",
+    {
+      params: { email, token },
+    },
+  );
 
-    return data;
-  } catch (error) {
-    console.log(error);
-    localStorage.removeItem('token');
-    throw new Error('Token expired or not valid');
-  }
+  const user: ProfileData = { ...perfil };
+
+  return {
+    id_usuario: Number(id_usuario),
+    token,
+    user,
+  };
 };
