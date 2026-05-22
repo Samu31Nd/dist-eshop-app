@@ -5,6 +5,8 @@ import { ShopLayout } from './shop/layouts/ShopLayout';
 import { HomePage } from './shop/pages/home/HomePage';
 import { ProductPage } from './shop/pages/product/ProductPage';
 import { GenderPage } from './shop/pages/gender/GenderPage';
+import { ShopPage } from './shop/pages/shop/ShopPage';
+import { CartPage } from './shop/pages/cart/CartPage';
 
 import { LoginPage } from './auth/pages/login/LoginPage';
 import { RegisterPage } from './auth/pages/register/RegisterPage';
@@ -43,6 +45,16 @@ export const appRouter = createHashRouter([
       {
         path: 'gender/:gender',
         element: <GenderPage />,
+      },
+      // RF-FE-2: Compra de artículos
+      {
+        path: 'shop',
+        element: <ShopPage />,
+      },
+      // RF-FE-2.3: Carrito de compra
+      {
+        path: 'shop/cart',
+        element: <CartPage />,
       },
     ],
   },

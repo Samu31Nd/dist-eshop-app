@@ -1,19 +1,23 @@
 import { useRef, type KeyboardEvent } from 'react';
-import { LogOutIcon, Search, SettingsIcon, UserIcon } from 'lucide-react';
+import { LogOutIcon, Search, SettingsIcon, UserIcon, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { Link, useParams, useSearchParams } from 'react-router';
 import { cn } from '@/lib/utils';
 import { CustomLogo } from '@/components/custom/CustomLogo';
 
 import { useAuthStore } from '@/auth/store/auth.store';
+import { useCartStore } from '@/shop/store/cart.store';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export const CustomHeader = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { authStatus, isAdmin, logout, user } = useAuthStore();
-  const userFirstName = user?.nombre
+  const { getItemCount } = useCartStore();
+  const userFirstName = user?.nombre;
+  const cartCount = getItemCount();
 
   const { gender } = useParams();
 
@@ -83,6 +87,22 @@ export const CustomHeader = () => {
                 >
                   Niños
                 </Link>
+                {/* RNF-2: Opción Compra de artículos */}
+                <Link
+                  to="/shop"
+                  className="text-sm font-medium transition-colors hover:text-primary"
+                >
+                  Compra de artículos
+                </Link>
+                {/* RNF-2: Opción Captura de artículo (Admin) */}
+                {isAdmin() && (
+                  <Link
+                    to="/admin/products/new"
+                    className="text-sm font-medium transition-colors hover:text-primary"
+                  >
+                    Captura de artículo
+                  </Link>
+                )}
               </nav>
             </>
           )}
@@ -107,6 +127,20 @@ export const CustomHeader = () => {
             <Button variant="ghost" size="icon" className="md:hidden">
               <Search className="h-5 w-5" />
             </Button>
+
+            {/* Carrito de compras */}
+            {authStatus === 'authenticated' && (
+              <Link to="/shop/cart" className="relative">
+                <Button variant="ghost" size="icon">
+                  <ShoppingCart className="h-5 w-5" />
+                  {cartCount > 0 && (
+                    <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                      {cartCount}
+                    </Badge>
+                  )}
+                </Button>
+              </Link>
+            )}
 
             {authStatus === 'not-authenticated' ? (
               // ? No autenticado
