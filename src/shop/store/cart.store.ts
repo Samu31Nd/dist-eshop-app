@@ -6,6 +6,13 @@ import {
   removeFromCartAction,
   clearCartAction,
 } from "@/shop/actions/cart.actions";
+import { queryClient } from "@/TesloShopApp";
+
+// Helper para invalidar las queries de productos
+const invalidateProductsQueries = () => {
+  queryClient.invalidateQueries({ queryKey: ["products"] });
+  queryClient.invalidateQueries({ queryKey: ["shop-products"] });
+};
 
 interface CartState {
   items: CarritoItem[];
@@ -64,6 +71,8 @@ export const useCartStore = create<CartState>()(
                 isLoading: false,
               });
             }
+            // Invalidar queries para actualizar stock en todas las vistas
+            invalidateProductsQueries();
             return true;
           }
           set({ isLoading: false });
@@ -84,6 +93,8 @@ export const useCartStore = create<CartState>()(
               (i) => i.id_articulo !== id_articulo
             );
             set({ items: updatedItems, isLoading: false });
+            // Invalidar queries para actualizar stock en todas las vistas
+            invalidateProductsQueries();
             return true;
           }
           set({ isLoading: false });
@@ -101,6 +112,8 @@ export const useCartStore = create<CartState>()(
           const response = await clearCartAction();
           if (response.mensaje === "OK") {
             set({ items: [], isLoading: false });
+            // Invalidar queries para actualizar stock en todas las vistas
+            invalidateProductsQueries();
             return true;
           }
           set({ isLoading: false });
