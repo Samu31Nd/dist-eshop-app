@@ -13,7 +13,11 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      "/Servicio": "http://localhost:8080",
+      "/Servicio": {
+        target: "https://nahumvg8escom.ddns.net",
+        changeOrigin: true, // Obligatorio para evitar problemas de host
+        secure: false, // Opcional, pero ayuda si hay problemas con la validación del certificado localmente
+      },
     },
   },
 });
