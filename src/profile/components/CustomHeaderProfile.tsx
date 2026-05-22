@@ -36,7 +36,7 @@ export const CustomHeaderProfile = () => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-full">
                     <Avatar>
-                      <AvatarImage src="/placeholder.svg" alt="shadcn" />
+                      <AvatarImage src={user?.foto ? `data:image/jpeg;base64,${user.foto}` : '/placeholder.svg'} alt="Avatar del usuario" />
                       <AvatarFallback>LR</AvatarFallback>
                     </Avatar>
                   </Button>

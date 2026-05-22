@@ -13,7 +13,7 @@ import { Toaster } from 'sonner';
 import { CustomFullScreenLoading } from './components/custom/CustomFullScreenLoading';
 import { useAuthStore } from './auth/store/auth.store';
 
-const queryClient = new QueryClient();
+export const queryClient = new QueryClient();
 
 const CheckAuthProvider = ({ children }: PropsWithChildren) => {
   const { checkAuthStatus } = useAuthStore();

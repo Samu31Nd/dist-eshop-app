@@ -58,7 +58,6 @@ export const useAuthStore = create<AuthState>()((set /*, get*/) => ({
   // ── REGISTER ───────────────────────────────────────────────────────────
   // Solo registra; no inicia sesión. Redirigir al login después.
   register: async (profile, password) => {
-    console.log(import.meta.env.VITE_API_URL ?? "/Servicio/rest/ws");
     try {
       const data = await registerAction(profile, password);
       console.log(data.mensaje);

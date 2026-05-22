@@ -1,6 +1,7 @@
 import { tomcatApi } from "@/api/tomcatApi";
 import type { MensajeResponse } from "../interfaces/auth.response";
 import type { ProfileData } from "../interfaces/profile.dto";
+import { hashPassword } from "@/lib/hash-password";
 
 export const registerAction = async (
   profile: ProfileData,
@@ -8,9 +9,12 @@ export const registerAction = async (
 ): Promise<MensajeResponse> => {
   // alta_usuario es POST y recibe el body JSON directamente, sin token.
   // Los campos deben coincidir exactamente con los atributos de Usuario.java.
+
+  const hashed = await hashPassword(password);
+
   const { data } = await tomcatApi.post<MensajeResponse>("/alta_usuario", {
     email: profile.email,
-    password: password,
+    password: hashed,
     nombre: profile.nombre,
     apellido_paterno: profile.apellido_paterno,
     apellido_materno: profile.apellido_materno ?? null,

@@ -3,9 +3,6 @@ import { createHashRouter, Navigate } from 'react-router';
 
 import { ShopLayout } from './shop/layouts/ShopLayout';
 import { HomePage } from './shop/pages/home/HomePage';
-import { ProductPage } from './shop/pages/product/ProductPage';
-import { GenderPage } from './shop/pages/gender/GenderPage';
-
 import { LoginPage } from './auth/pages/login/LoginPage';
 import { RegisterPage } from './auth/pages/register/RegisterPage';
 
@@ -20,6 +17,8 @@ import {
 } from './components/routes/ProtectedRoutes';
 import { ProfilePage } from './profile/pages/Profile/ProfilePage';
 import { ProfileEditPage } from './profile/pages/EditProfile/ProfileEditPage';
+import { ShopPage } from './shop/pages/shop/shopPage';
+import { CartPage } from './shop/pages/cart/cartPage';
 
 const AuthLayout = lazy(() => import('./auth/layouts/AuthLayout'));
 const AdminLayout = lazy(() => import('./admin/layouts/AdminLayout'));
@@ -30,21 +29,35 @@ export const appRouter = createHashRouter([
   // Main routes
   {
     path: '/',
-    element: <ShopLayout />,
+    element: (
+      <ShopLayout />
+    ),
     children: [
       {
         index: true,
         element: <HomePage />,
       },
-      {
-        path: 'product/:idSlug',
-        element: <ProductPage />,
-      },
-      {
-        path: 'gender/:gender',
-        element: <GenderPage />,
-      },
     ],
+  },
+  {
+    path: '/shop',
+    element: (
+      <AuthenticatedRoute>
+        <ShopLayout />
+      </AuthenticatedRoute>
+    ),
+    children: [
+      // RF-FE-2: Compra de artículos
+      {
+        index: true,
+        element: <ShopPage />,
+      },
+      // RF-FE-2.3: Carrito de compra
+      {
+        path: 'cart',
+        element: <CartPage />,
+      },
+    ]
   },
 
   // Auth Routes

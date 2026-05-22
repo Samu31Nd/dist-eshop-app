@@ -1,6 +1,7 @@
 import { tomcatApi } from "@/api/tomcatApi";
 import type { MensajeResponse } from "../interfaces/auth.response";
 import type { ProfileData } from "../interfaces/profile.dto";
+import { hashPassword } from "@/lib/hash-password";
 
 interface UpdateProfileInput {
   nombre: string;
@@ -20,6 +21,10 @@ export const updateProfileAction = async (
   const email = localStorage.getItem("email")!;
   const token = localStorage.getItem("token")!;
 
+  const hashedPassword = data.password
+    ? await hashPassword(data.password)
+    : null;
+
   // PUT /modifica_usuario?email=EMAIL_ORIGINAL&token=TOKEN
   // El interceptor inyecta id_usuario+token pero modifica_usuario usa email+token,
   // así que los pasamos explícitamente para sobreescribir
@@ -35,7 +40,7 @@ export const updateProfileAction = async (
       genero: data.genero ?? null,
       foto: data.foto ?? null,
       // password vacío → Tomcat no lo actualiza
-      password: data.password || null,
+      password: hashedPassword,
     },
     { params: { email, token } },
   );

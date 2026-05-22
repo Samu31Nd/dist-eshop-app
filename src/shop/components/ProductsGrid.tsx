@@ -1,9 +1,7 @@
 import { Button } from '@/components/ui/button';
-import { Filter, Grid, List } from 'lucide-react';
+import { Grid, List } from 'lucide-react';
 import { ProductCard } from './ProductCard';
-import { FilterSidebar } from './FilterSidebar';
 import { useSearchParams } from 'react-router';
-import { useState } from 'react';
 import type { Articulo } from '@/interfaces/articulo.interface';
 
 interface Props {
@@ -12,8 +10,6 @@ interface Props {
 
 export const ProductsGrid = ({ products }: Props) => {
   const [searchParams, setSearchParams] = useSearchParams();
-
-  const [showFilters, setShowFilters] = useState(false);
   const viewMode = searchParams.get('viewMode') || 'grid';
 
   const handleViewModeChange = (mode: 'grid' | 'list') => {
@@ -33,15 +29,6 @@ export const ProductsGrid = ({ products }: Props) => {
           </div>
 
           <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowFilters(!showFilters)}
-              className="lg:hidden"
-            >
-              <Filter className="h-4 w-4 mr-2" />
-              Filtros
-            </Button>
 
             <div className="hidden md:flex border rounded-md">
               <Button
@@ -65,27 +52,6 @@ export const ProductsGrid = ({ products }: Props) => {
         </div>
 
         <div className="flex gap-8">
-          {/* Filters Sidebar - Desktop */}
-          <div className="hidden lg:block">
-            <FilterSidebar />
-          </div>
-
-          {/* Mobile Filters */}
-          {showFilters && (
-            <div className="fixed inset-0 z-50 bg-background p-4 lg:hidden">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold">Filtros</h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowFilters(false)}
-                >
-                  Cerrar
-                </Button>
-              </div>
-              <FilterSidebar />
-            </div>
-          )}
 
           {/* Products Grid */}
           <div className="flex-1">

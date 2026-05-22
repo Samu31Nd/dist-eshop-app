@@ -1,6 +1,5 @@
 import { AdminTitle } from '@/admin/components/AdminTitle';
 import { CustomFullScreenLoading } from '@/components/custom/CustomFullScreenLoading';
-import { CustomPagination } from '@/components/custom/CustomPagination';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -86,7 +85,6 @@ export const AdminProductsPage = () => {
           ))}
         </TableBody>
       </Table>
-      <CustomPagination totalPages={1} />
     </>
   );
 };
