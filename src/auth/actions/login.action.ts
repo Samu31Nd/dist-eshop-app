@@ -21,7 +21,7 @@ export const loginAction = async (
   const { data: perfil } = await tomcatApi.get<ProfileData>(
     "/consulta_usuario",
     {
-      params: { email, token: auth.token },
+      params: { id_usuario: auth.id_usuario, token: auth.token },
     },
   );
 

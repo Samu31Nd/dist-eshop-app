@@ -11,12 +11,13 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // base: "http://localhost:7071/api/ServidorWeb?nombre=", // <-- ESTA LÍNEA ES CRUCIAL
   server: {
     proxy: {
-      "/Servicio": {
-        target: "https://nahumvg8escom.ddns.net",
-        changeOrigin: true, // Obligatorio para evitar problemas de host
-        secure: false, // Opcional, pero ayuda si hay problemas con la validación del certificado localmente
+      "/api": {
+        target:
+          "http://t8ap2022630250-enh4ccgtb8dnd3bn.eastus-01.azurewebsites.net", // puerto del emulador de Azure Functions
+        changeOrigin: true,
       },
     },
   },

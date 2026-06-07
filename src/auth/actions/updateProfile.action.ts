@@ -19,11 +19,10 @@ export const updateProfileAction = async (
   data: UpdateProfileInput,
 ): Promise<ProfileData> => {
   const email = localStorage.getItem("email")!;
+  const id_usuario = localStorage.getItem("id_usuario")!;
   const token = localStorage.getItem("token")!;
 
-  const hashedPassword = data.password
-    ? await hashPassword(data.password)
-    : null;
+  const hashedPassword = data.password ? await hashPassword(data.password) : "";
 
   // PUT /modifica_usuario?email=EMAIL_ORIGINAL&token=TOKEN
   // El interceptor inyecta id_usuario+token pero modifica_usuario usa email+token,
@@ -42,7 +41,7 @@ export const updateProfileAction = async (
       // password vacío → Tomcat no lo actualiza
       password: hashedPassword,
     },
-    { params: { email, token } },
+    { params: { id_usuario, token } },
   );
 
   // Si el email cambió, actualizarlo en localStorage para futuras llamadas
@@ -54,7 +53,7 @@ export const updateProfileAction = async (
   const { data: perfil } = await tomcatApi.get<ProfileData>(
     "/consulta_usuario",
     {
-      params: { email: data.email, token },
+      params: { id_usuario, token },
     },
   );
 

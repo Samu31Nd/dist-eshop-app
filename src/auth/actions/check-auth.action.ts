@@ -14,7 +14,7 @@ export const checkAuthAction = async (): Promise<AuthResponse> => {
   const { data: perfil } = await tomcatApi.get<ProfileData>(
     "/consulta_usuario",
     {
-      params: { email, token },
+      params: { id_usuario, token },
     },
   );
 
